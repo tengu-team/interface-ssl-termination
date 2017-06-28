@@ -51,8 +51,8 @@ class SSLTerminationRequires(RelationBase):
                 'service': service_name,
                 'fqdns': array_fqdns,
                 'private_ips': array_private_ips,
-                'basic_auth': basic_auth if basic_auth else [],
-                'loadbalancing': loadbalancing if loadbalancing else '',
+                'basic_auth': basic_auth,
+                'loadbalancing': loadbalancing,
                 }
             conv.set_local(**relation_info)
             conv.set_remote(**relation_info)

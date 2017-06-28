@@ -49,11 +49,18 @@ class SSLTerminationProvides(RelationBase):
     def get_data(self):
         data = []
         for conv in self.conversations():
+            try:
+                basic_auth = [
+                    {'user': u.split(' | ', 1)[0], 'password': u.split('  ', 1)[1]}
+                    for u in conv.get_remote('basic_auth').split(' | ')
+                ]
+            except IndexError:
+                basic_auth = []
             data.append({
                 'service': conv.get_remote('service'),
-                'fqdns': conv.get_remote('fqdns'),
-                'private_ips': conv.get_remote('private_ips'),
-                'basic_auth': conv.get_remote('basic_auth'),
+                'fqdns': conv.get_remote('fqdns').split(' '),
+                'private_ips': conv.get_remote('private_ips').split(' '),
+                'basic_auth': basic_auth,
                 'loadbalancing': conv.get_remote('loadbalancing')
             })
         return data
