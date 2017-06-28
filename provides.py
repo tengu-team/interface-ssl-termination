@@ -29,7 +29,6 @@ class SSLTerminationProvides(RelationBase):
     @hook('{requires:ssl-termination}-relation-{changed}')
     def changed(self):
         for conv in self.conversations():
-            conv = self.conversation()
             data = {
                 'service': conv.get_remote('service'),
                 'fqdns': conv.get_remote('fqdns'),
