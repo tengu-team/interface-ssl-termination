@@ -45,7 +45,7 @@ class SSLTerminationRequires(RelationBase):
         conv.remove_state('{relation_name}.available')
         conv.set_state('{relation_name}.removed')
 
-    def request_proxy(self, service_name, array_fqdns, array_private_ips, basic_auth=None, loadbalancing=None):
+    def request_proxy(self, service_name, array_fqdns, array_private_ips, basic_auth='', loadbalancing=''):
         for conv in self.conversations():
             relation_info = {
                 'service': service_name,
