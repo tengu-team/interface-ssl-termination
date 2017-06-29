@@ -22,9 +22,9 @@ class SSLTerminationProvides(RelationBase):
 
     @hook('{provides:ssl-termination}-relation-{joined}')
     def joined(self):
-        conv = self.conversation()
-        conv.remove_state('{relation_name}.removed')
-        conv.set_state('{relation_name}.connected')
+        for conv in self.conversations():
+            conv.remove_state('{relation_name}.removed')
+            conv.set_state('{relation_name}.connected')
 
     @hook('{requires:ssl-termination}-relation-{changed}')
     def changed(self):
@@ -41,27 +41,29 @@ class SSLTerminationProvides(RelationBase):
 
     @hook('{provides:ssl-termination}-relation-{broken,departed}')
     def broken(self):
-        conv = self.conversation()
-        conv.remove_state('{relation_name}.connected')
-        conv.remove_state('{relation_name}.available')
-        conv.set_state('{relation_name}.removed')
+        for conv in self.conversations():
+            conv.remove_state('{relation_name}.connected')
+            conv.remove_state('{relation_name}.available')
+            conv.set_state('{relation_name}.removed')
 
     def get_data(self):
         data = []
         for conv in self.conversations():
             try:
                 basic_auth = [
-                    {'user': u.split(' | ', 1)[0], 'password': u.split('  ', 1)[1]}
-                    for u in conv.get_remote('basic_auth').split(' | ')
+                    {'name': u.split(' | ', 1)[0], 'password': u.split(' | ', 1)[1]}
+                    for u in conv.get_remote('basic_auth').split('  ')
                 ]
-            except IndexError:
+            except (IndexError, AttributeError):
                 basic_auth = []
+            loadbalancing = conv.get_remote('loadbalancing')
+            loadbalancing = '' if loadbalancing is None else loadbalancing
             data.append({
                 'service': conv.get_remote('service'),
                 'fqdns': conv.get_remote('fqdns').split(' '),
                 'private_ips': conv.get_remote('private_ips').split(' '),
                 'basic_auth': basic_auth,
-                'loadbalancing': conv.get_remote('loadbalancing')
+                'loadbalancing': loadbalancing
             })
         return data
 

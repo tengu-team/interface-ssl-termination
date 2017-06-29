@@ -22,9 +22,9 @@ class SSLTerminationRequires(RelationBase):
 
     @hook('{requires:ssl-termination}-relation-{joined}')
     def joined(self):
-        conv = self.conversation()
-        conv.remove_state('{relation_name}.removed')
-        conv.set_state('{relation_name}.connected')
+        for conv in self.conversations():
+            conv.remove_state('{relation_name}.removed')
+            conv.set_state('{relation_name}.connected')
 
     @hook('{requires:ssl-termination}-relation-{changed}')
     def changed(self):
@@ -40,10 +40,10 @@ class SSLTerminationRequires(RelationBase):
 
     @hook('{requires:ssl-termination}-relation-{departed,broken}')
     def broken(self):
-        conv = self.conversation()
-        conv.remove_state('{relation_name}.connected')
-        conv.remove_state('{relation_name}.available')
-        conv.set_state('{relation_name}.removed')
+        for conv in self.conversations():
+            conv.remove_state('{relation_name}.connected')
+            conv.remove_state('{relation_name}.available')
+            conv.set_state('{relation_name}.removed')
 
     def request_proxy(self, service_name, array_fqdns, array_private_ips, basic_auth='', loadbalancing=''):
         for conv in self.conversations():
@@ -57,3 +57,4 @@ class SSLTerminationRequires(RelationBase):
             conv.set_local(**relation_info)
             conv.set_remote(**relation_info)
         self.changed()
+
