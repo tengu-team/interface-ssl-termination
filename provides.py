@@ -56,14 +56,12 @@ class SSLTerminationProvides(RelationBase):
                 ]
             except (IndexError, AttributeError):
                 basic_auth = []
-            loadbalancing = conv.get_remote('loadbalancing')
-            loadbalancing = '' if loadbalancing is None else loadbalancing
             data.append({
                 'service': conv.get_remote('service'),
                 'fqdns': conv.get_remote('fqdns').split(' '),
                 'private_ips': conv.get_remote('private_ips').split(' '),
                 'basic_auth': basic_auth,
-                'loadbalancing': loadbalancing
+                'loadbalancing': conv.get_remote('loadbalancing')
             })
         return data
 
