@@ -14,46 +14,54 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # pylint: disable=c0111,c0301,c0325, r0903,w0406
-from charms.reactive import hook, RelationBase, scopes
+
+from charms.reactive import (
+    when_any,
+    when_not,
+    set_flag,
+    clear_flag,
+    Endpoint,
+)
 
 
-class SSLTerminationRequires(RelationBase):
-    scope = scopes.UNIT
+class SSLTerminationRequires(Endpoint):
 
-    @hook('{requires:ssl-termination}-relation-{joined}')
-    def joined(self):
-        for conv in self.conversations():
-            conv.remove_state('{relation_name}.removed')
-            conv.set_state('{relation_name}.connected')
+    @when_any('endpoint.{endpoint_name}.joined')
+    def proxy_joined(self):
+        set_flag(self.expand_name('available'))
 
-    @hook('{requires:ssl-termination}-relation-{changed}')
-    def changed(self):
-        for conv in self.conversations():
-            data = {
-                'service': conv.get_local('service'),
-                'fqdns': conv.get_local('fqdns'),
-                'private_ips': conv.get_local('private_ips'),
-                'loadbalancing': conv.get_local('loadbalancing')
-            }
-            if data['service']:
-                conv.set_state('{relation_name}.available')
+    @when_not('endpoint.{endpoint_name}.joined')
+    def proxy_broken(self):
+        clear_flag(self.expand_name('available'))
 
-    @hook('{requires:ssl-termination}-relation-{departed,broken}')
-    def broken(self):
-        for conv in self.conversations():
-            conv.remove_state('{relation_name}.connected')
-            conv.remove_state('{relation_name}.available')
-            conv.set_state('{relation_name}.removed')
+    @when_any('endpoint.{endpoint_name}.departed',
+              'endpoint.{endpoint_name}.changed.status')
+    def proxy_changed(self):
+        set_flag(self.expand_name('endpoint.{endpoint_name}.update'))
+        clear_flag(self.expand_name('endpoint.{endpoint_name}.departed'))
+        clear_flag(self.expand_name('endpoint.{endpoint_name}.changed.status'))
 
-    def request_proxy(self, service_name, fqdns, array_private_ips, basic_auth='', loadbalancing=''):
-        for conv in self.conversations():
-            relation_info = {
-                'service': service_name,
-                'fqdns': fqdns,
-                'private_ips': ' '.join(array_private_ips),
-                'basic_auth': basic_auth,
-                'loadbalancing': loadbalancing,
-                }
-            conv.set_local(**relation_info)
-            conv.set_remote(**relation_info)
-        self.changed()
+    def send_cert_info(self, request):
+        """request should be a dict with the following format:
+        {
+            'fqdn': ['example.com', 'blog.example.com'],
+            'contact-email': '',
+            'credentials': 'user pass',
+            'upstreams': [{
+                            'hostname': 'x.x.x.x',
+                            'port': 'XXXX'
+                         }],
+        }
+        """
+        for relation in self.relations:
+            relation.to_publish['cert-request'] = request
+
+    def get_status(self):
+        status = []
+        for relation in self.relations:
+            for unit in relation.units:
+                status.append({
+                    'status': unit.received['status'],
+                    'remote_unit_name': unit.unit_name
+                })
+        return status

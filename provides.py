@@ -14,56 +14,43 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # pylint: disable=c0111,c0301,c0325, r0903,w0406
-from charms.reactive import hook, RelationBase, scopes
+
+from charms.reactive import (
+    when_any,
+    when_not,
+    set_flag,
+    clear_flag,
+    Endpoint,
+)
 
 
-class SSLTerminationProvides(RelationBase):
-    scope = scopes.UNIT
+class SSLTerminationProvides(Endpoint):
 
-    @hook('{provides:ssl-termination}-relation-{joined}')
-    def joined(self):
-        for conv in self.conversations():
-            conv.remove_state('{relation_name}.removed')
-            conv.set_state('{relation_name}.connected')
+    @when_any('endpoint.{endpoint_name}.joined')
+    def client_joined(self):
+        set_flag(self.expand_name('available'))
 
-    @hook('{requires:ssl-termination}-relation-{changed}')
-    def changed(self):
-        for conv in self.conversations():
-            data = {
-                'service': conv.get_remote('service'),
-                'fqdns': conv.get_remote('fqdns'),
-                'private_ips': conv.get_remote('private_ips'),
-                'basic_auth': conv.get_remote('basic_auth'),
-                'loadbalancing': conv.get_remote('loadbalancing')
-            }
-            if data['service']:
-                conv.set_state('{relation_name}.available')
+    @when_not('endpoint.{endpoint_name}.joined')
+    def client_broken(self):
+        clear_flag(self.expand_name('available'))
 
-    @hook('{provides:ssl-termination}-relation-{broken,departed}')
-    def broken(self):
-        for conv in self.conversations():
-            conv.remove_state('{relation_name}.connected')
-            conv.remove_state('{relation_name}.available')
-            conv.set_state('{relation_name}.removed')
+    @when_any('endpoint.{endpoint_name}.departed',
+              'endpoint.{endpoint_name}.changed.cert-request')
+    def client_changed(self):
+        set_flag(self.expand_name('update'))
+        clear_flag(self.expand_name('departed'))
+        clear_flag(self.expand_name('changed.cert-request'))
 
-    def get_data(self):
-        data = []
-        for conv in self.conversations():
-            try:
-                basic_auth = [
-                    {'name': u.split(' | ', 1)[0], 'password': u.split(' | ', 1)[1]}
-                    for u in conv.get_remote('basic_auth').split('  ')
-                ]
-            except (IndexError, AttributeError):
-                basic_auth = []
-            data.append({
-                'service': conv.get_remote('service'),
-                'fqdns': conv.get_remote('fqdns').split(' '),
-                'private_ips': conv.get_remote('private_ips').split(' '),
-                'basic_auth': basic_auth,
-                'loadbalancing': conv.get_remote('loadbalancing')
-            })
-        return data
+    def get_cert_requests(self):
+        cert_requests = []
+        for relation in self.relations:
+            for unit in relation.units:
+                request = unit.received['cert-request']
+                if request:
+                    request['juju_unit'] = unit.unit_name
+                    cert_requests.append(request)
+        return cert_requests
 
-    def check_status(self):
-        self.changed()
+    def send_status(self, status):
+        for relation in self.relations:
+            relation.to_publish['status'] = status
