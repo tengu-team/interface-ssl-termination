@@ -49,8 +49,16 @@ class SSLTerminationRequires(Endpoint):
             'credentials': 'user pass',
             'upstreams': [{
                             'hostname': 'x.x.x.x',
-                            'port': 'XXXX'
+                            'port': 'xxxx'
                          }],
+            'tcp': [{
+                      'port': xxxx,
+                      'hosts': ['x.x.x.x', 'x.x.x.x'] 
+                   }],
+            'udp': [{
+                      'port': xxxx,
+                      'hosts': ['x.x.x.x', 'x.x.x.x']
+                   }],
         }
         """
         for relation in self.relations:
