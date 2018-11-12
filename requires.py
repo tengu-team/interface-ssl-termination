@@ -54,11 +54,7 @@ class SSLTerminationRequires(Endpoint):
             'tcp': [{
                       'port': xxxx,
                       'hosts': ['x.x.x.x', 'x.x.x.x'] 
-                   }],
-            'udp': [{
-                      'port': xxxx,
-                      'hosts': ['x.x.x.x', 'x.x.x.x']
-                   }],
+                   }]
         }
         """
         for relation in self.relations:
