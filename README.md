@@ -19,7 +19,8 @@ Use the `send_cert_info(request)` method to create a request. A request has the 
     'upstreams': [{
         'hostname': 'x.x.x.x',
         'port': 'XXXX'
-    }]
+    }],
+    'nginx-config': ['client_max_body_size: 10G;']
 }
 ```
 
