@@ -51,6 +51,7 @@ class SSLTerminationRequires(Endpoint):
                             'hostname': 'x.x.x.x',
                             'port': 'XXXX'
                          }],
+            'nginx-config': ['client_max_body_size: 10G;'],
         }
         """
         for relation in self.relations:
